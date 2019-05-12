@@ -15,7 +15,12 @@ type Summary struct {
 	TopLetters []string
 }
 
-type Aggregator struct {
+type Aggregator interface {
+	Write(string)
+	Read() Summary
+}
+
+type MutexAggregator struct {
 	// Chosen a RWMutex over a regular Mutex because multiple simultaneous reads don't need to lock unless sonething is being written.
 	lock sync.RWMutex
 
@@ -23,14 +28,14 @@ type Aggregator struct {
 	letters map[string]int
 }
 
-func New() Aggregator {
-	return Aggregator{
+func New() MutexAggregator {
+	return MutexAggregator{
 		words:   make(map[string]int),
 		letters: make(map[string]int),
 	}
 }
 
-func (agg *Aggregator) Write(word string) {
+func (agg *MutexAggregator) Write(word string) {
 	// Words should not be discriminated by case.
 	word = strings.ToLower(word)
 
@@ -56,7 +61,7 @@ func (agg *Aggregator) Write(word string) {
 	}
 }
 
-func (agg *Aggregator) Read() Summary {
+func (agg *MutexAggregator) Read() Summary {
 	agg.lock.RLock()
 	defer agg.lock.RUnlock()
 
