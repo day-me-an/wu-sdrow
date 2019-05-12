@@ -37,3 +37,38 @@ func createWriteServer(agg summary.Aggregator) *http.ServeMux {
 
 	return mux
 }
+		scanner := bufio.NewScanner(r.Body)
+		scanner.Split(bufio.ScanWords)
+		for scanner.Scan() {
+			word := scanner.Text()
+			agg.Write(word)
+		}
+	})
+
+	return mux
+}
+
+// A server that provides stats.
+func createReadServer(agg summary.Aggregator) *http.ServeMux {
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		summary := agg.Read()
+		data, err := json.Marshal(summary)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
+	})
+
+	return mux
+}
