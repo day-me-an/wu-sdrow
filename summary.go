@@ -1,6 +1,7 @@
 package summary
 
 import (
+	"strings"
 	"sync"
 	"unicode"
 )
@@ -30,6 +31,9 @@ func New() Aggregator {
 }
 
 func (agg *Aggregator) Write(word string) {
+	// Words should not be discriminated by case.
+	word = strings.ToLower(word)
+
 	agg.lock.Lock()
 	defer agg.lock.Unlock()
 

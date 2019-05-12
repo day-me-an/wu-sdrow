@@ -43,6 +43,14 @@ func TestRead_Letters(t *testing.T) {
 	}
 }
 
+func TestRead_Casing(t *testing.T) {
+	state := readVia("damian", "Damian", "DAMIAN")
+
+	if !reflect.DeepEqual(state.TopWords, []string{"damian"}) {
+		t.Error("Wrong top words", state.TopWords, len(state.TopWords))
+	}
+}
+
 // Helper function that creates an aggregator, writes the words and performs a read.
 func readVia(words ...string) Summary {
 	agg := New()
