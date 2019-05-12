@@ -7,16 +7,8 @@ import (
 
 func TestWrite(t *testing.T) {
 	agg := New()
-
 	agg.Write("hello")
-	agg.Write("hello")
-	agg.Write("world")
-
-	state := agg.Read()
-
-	if state.Count != 2 {
-		t.Error("Expected unique 2 words, but got", state.Count)
-	}
+	// No checks.
 }
 
 func BenchmarkWrite(b *testing.B) {
@@ -29,6 +21,37 @@ func BenchmarkWrite(b *testing.B) {
 		// TODO: use random words here for a more realistic benchmark.
 		agg.Write("hello")
 	}
+}
+
+func TestRead_Words(t *testing.T) {
+	state := readVia("hello", "hello", "world")
+
+	if state.Count != 2 {
+		t.Error("Expected unique 2 words, but got", state.Count)
+	}
+
+	if !reflect.DeepEqual(state.TopWords, []string{"hello", "world"}) {
+		t.Error("Wrong top words", state.TopWords, len(state.TopWords))
+	}
+}
+
+func TestRead_Letters(t *testing.T) {
+	state := readVia("aaab")
+
+	if !reflect.DeepEqual(state.TopLetters, []string{"a", "b"}) {
+		t.Error("Wrong top letters", state.TopLetters, len(state.TopLetters))
+	}
+}
+
+// Helper function that creates an aggregator, writes the words and performs a read.
+func readVia(words ...string) Summary {
+	agg := New()
+
+	for _, word := range words {
+		agg.Write(word)
+	}
+
+	return agg.Read()
 }
 
 func TestTopN(t *testing.T) {

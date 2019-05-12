@@ -2,6 +2,7 @@ package summary
 
 import (
 	"sync"
+	"unicode"
 )
 
 type Summary struct {
@@ -17,12 +18,14 @@ type Aggregator struct {
 	// Chosen a RWMutex over a regular Mutex because multiple simultaneous reads don't need to lock unless sonething is being written.
 	lock sync.RWMutex
 
-	words map[string]int
+	words   map[string]int
+	letters map[string]int
 }
 
 func New() Aggregator {
 	return Aggregator{
-		words: make(map[string]int),
+		words:   make(map[string]int),
+		letters: make(map[string]int),
 	}
 }
 
@@ -35,6 +38,18 @@ func (agg *Aggregator) Write(word string) {
 	} else {
 		agg.words[word] = 1
 	}
+
+	for _, char := range word {
+		if unicode.IsLetter(char) {
+			letter := string(char)
+
+			if count, exists := agg.letters[letter]; exists {
+				agg.letters[letter] = count + 1
+			} else {
+				agg.letters[letter] = 1
+			}
+		}
+	}
 }
 
 func (agg *Aggregator) Read() Summary {
@@ -42,7 +57,9 @@ func (agg *Aggregator) Read() Summary {
 	defer agg.lock.RUnlock()
 
 	return Summary{
-		Count: len(agg.words),
+		Count:      len(agg.words),
+		TopWords:   topN(agg.words, 5),
+		TopLetters: topN(agg.letters, 5),
 	}
 }
 
