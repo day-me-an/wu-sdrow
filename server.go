@@ -2,16 +2,31 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"net/http"
 
 	"./summary"
 )
 
+const (
+	writeServerPort = 5555
+	readServerPort  = 8080
+)
+
 func main() {
 	agg := summary.New()
 
-	if err := http.ListenAndServe(fmt.Sprint(":", 5555), createWriteServer(&agg)); err != nil {
+	// Must start in a separate goroutine because ListenAndServe blocks.
+	go func() {
+		fmt.Println("Starting read server on port", readServerPort)
+		if err := http.ListenAndServe(fmt.Sprint(":", readServerPort), createReadServer(&agg)); err != nil {
+			panic(err)
+		}
+	}()
+
+	fmt.Println("Starting write server on port", writeServerPort)
+	if err := http.ListenAndServe(fmt.Sprint(":", writeServerPort), createWriteServer(&agg)); err != nil {
 		panic(err)
 	}
 }
@@ -27,16 +42,6 @@ func createWriteServer(agg summary.Aggregator) *http.ServeMux {
 		}
 
 		// Efficiently iterate over the words as they come in.
-		scanner := bufio.NewScanner(r.Body)
-		scanner.Split(bufio.ScanWords)
-		for scanner.Scan() {
-			word := scanner.Text()
-			agg.Write(word)
-		}
-	})
-
-	return mux
-}
 		scanner := bufio.NewScanner(r.Body)
 		scanner.Split(bufio.ScanWords)
 		for scanner.Scan() {
