@@ -48,6 +48,11 @@ func (agg *Aggregator) Read() Summary {
 
 // Finds the N highest value entries in a map.
 func topN(m map[string]int, n int) []string {
+	// The map size may be less than the requested N.
+	if n > len(m) {
+		n = len(m)
+	}
+
 	top := make([]string, n)
 	picked := make(map[string]bool)
 
