@@ -8,11 +8,11 @@ import (
 
 type Summary struct {
 	// The number of _unique_ words seen.
-	Count int
+	Count int `json:"count"`
 	// The top N occurring words seen.
-	TopWords []string
+	TopWords []string `json:"top_words"`
 	// The top N letters seen in all words.
-	TopLetters []string
+	TopLetters []string `json:"top_letters"`
 }
 
 type Aggregator interface {
