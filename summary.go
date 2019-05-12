@@ -45,3 +45,28 @@ func (agg *Aggregator) Read() Summary {
 		Count: len(agg.words),
 	}
 }
+
+// Finds the N highest value entries in a map.
+func topN(m map[string]int, n int) []string {
+	top := make([]string, n)
+	picked := make(map[string]bool)
+
+	for i := 0; i < n; i++ {
+		highestSoFar := 0
+
+		for item, count := range m {
+			if picked[item] {
+				continue
+			}
+
+			if count > highestSoFar {
+				highestSoFar = count
+				top[i] = item
+			}
+		}
+
+		picked[top[i]] = true
+	}
+
+	return top
+}

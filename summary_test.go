@@ -1,6 +1,7 @@
 package summary
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -27,5 +28,16 @@ func BenchmarkWrite(b *testing.B) {
 	for n := 0; n < b.N; n++ {
 		// TODO: use random words here for a more realistic benchmark.
 		agg.Write("hello")
+	}
+}
+
+func TestTopN(t *testing.T) {
+	m := map[string]int{"bob": -4, "hello": 5, "world": 8}
+
+	actual := topN(m, 2)
+	expected := []string{"world", "hello"}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Error("Top items not as expected", actual)
 	}
 }
