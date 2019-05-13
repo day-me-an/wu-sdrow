@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"./summary"
+	"./data"
 )
 
 func TestWriteServer_PostOnly(t *testing.T) {
@@ -29,16 +29,16 @@ func TestWriteServer_PostOnly(t *testing.T) {
 }
 
 func TestWriteServer_SubmitText(t *testing.T) {
-	agg := FakeAggregator{}
+	store := &FakeStore{}
 
-	srv := createWriteServer(&agg)
+	srv := createWriteServer(store)
 	ts := httptest.NewServer(srv)
 	defer ts.Close()
 
 	http.Post(ts.URL, "text/plain", strings.NewReader("hello world 123"))
 
-	if !reflect.DeepEqual(agg.written, []string{"hello", "world", "123"}) {
-		t.Error("Unexpected words written", agg.written)
+	if !reflect.DeepEqual(store.written, []string{"hello", "world", "123"}) {
+		t.Error("Unexpected words written", store.written)
 	}
 }
 
@@ -59,36 +59,36 @@ func TestReadServer_GetOnly(t *testing.T) {
 }
 
 func TestReadServer_GetStats(t *testing.T) {
-	agg := FakeAggregator{}
+	store := FakeStore{}
 
-	srv := createReadServer(&agg)
+	srv := createReadServer(&store)
 	ts := httptest.NewServer(srv)
 	defer ts.Close()
 
 	res, _ := http.Get(ts.URL + "/stats")
 
-	data, _ := ioutil.ReadAll(res.Body)
-	var actual summary.Summary
-	json.Unmarshal(data, &actual)
+	bodyBytes, _ := ioutil.ReadAll(res.Body)
+	var actual data.Summary
+	json.Unmarshal(bodyBytes, &actual)
 
 	if !reflect.DeepEqual(actual, fakeSummary) {
 		t.Error("Unexpected data returned", actual)
 	}
 }
 
-type FakeAggregator struct {
+type FakeStore struct {
 	written []string
 }
 
-func (agg *FakeAggregator) Write(word string) {
-	agg.written = append(agg.written, word)
+func (store *FakeStore) Write(word string) {
+	store.written = append(store.written, word)
 }
 
-func (agg *FakeAggregator) Read() summary.Summary {
+func (store *FakeStore) Query() data.Summary {
 	return fakeSummary
 }
 
-var fakeSummary = summary.Summary{
+var fakeSummary = data.Summary{
 	Count:      123,
 	TopWords:   []string{"damian"},
 	TopLetters: []string{"d"},
