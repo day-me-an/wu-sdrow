@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"./summary"
+	"./data"
 )
 
 const (
@@ -15,24 +15,24 @@ const (
 )
 
 func main() {
-	agg := summary.New()
+	store := data.NewMutexStore()
 
 	// Must start in a separate goroutine because ListenAndServe blocks.
 	go func() {
 		fmt.Println("Starting read server on port", readServerPort)
-		if err := http.ListenAndServe(fmt.Sprint(":", readServerPort), createReadServer(&agg)); err != nil {
+		if err := http.ListenAndServe(fmt.Sprint(":", readServerPort), createReadServer(store)); err != nil {
 			panic(err)
 		}
 	}()
 
 	fmt.Println("Starting write server on port", writeServerPort)
-	if err := http.ListenAndServe(fmt.Sprint(":", writeServerPort), createWriteServer(&agg)); err != nil {
+	if err := http.ListenAndServe(fmt.Sprint(":", writeServerPort), createWriteServer(store)); err != nil {
 		panic(err)
 	}
 }
 
 // A server that listens for write requests.
-func createWriteServer(agg summary.Aggregator) *http.ServeMux {
+func createWriteServer(store data.Store) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +46,7 @@ func createWriteServer(agg summary.Aggregator) *http.ServeMux {
 		scanner.Split(bufio.ScanWords)
 		for scanner.Scan() {
 			word := scanner.Text()
-			agg.Write(word)
+			store.Write(word)
 		}
 	})
 
@@ -54,7 +54,7 @@ func createWriteServer(agg summary.Aggregator) *http.ServeMux {
 }
 
 // A server that provides stats.
-func createReadServer(agg summary.Aggregator) *http.ServeMux {
+func createReadServer(store data.Store) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
@@ -63,7 +63,7 @@ func createReadServer(agg summary.Aggregator) *http.ServeMux {
 			return
 		}
 
-		summary := agg.Read()
+		summary := store.Query()
 		data, err := json.Marshal(summary)
 
 		if err != nil {

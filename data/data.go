@@ -1,4 +1,4 @@
-package summary
+package data
 
 import (
 	"strings"
@@ -15,12 +15,12 @@ type Summary struct {
 	TopLetters []string `json:"top_letters"`
 }
 
-type Aggregator interface {
+type Store interface {
 	Write(string)
-	Read() Summary
+	Query() Summary
 }
 
-type MutexAggregator struct {
+type MutexStore struct {
 	// Chosen a RWMutex over a regular Mutex because multiple simultaneous reads don't need to lock unless sonething is being written.
 	lock sync.RWMutex
 
@@ -28,47 +28,47 @@ type MutexAggregator struct {
 	letters map[string]int
 }
 
-func New() MutexAggregator {
-	return MutexAggregator{
+func NewMutexStore() *MutexStore {
+	return &MutexStore{
 		words:   make(map[string]int),
 		letters: make(map[string]int),
 	}
 }
 
-func (agg *MutexAggregator) Write(word string) {
+func (store *MutexStore) Write(word string) {
 	// Words should not be discriminated by case.
 	word = strings.ToLower(word)
 
-	agg.lock.Lock()
-	defer agg.lock.Unlock()
+	store.lock.Lock()
+	defer store.lock.Unlock()
 
-	if count, exists := agg.words[word]; exists {
-		agg.words[word] = count + 1
+	if count, exists := store.words[word]; exists {
+		store.words[word] = count + 1
 	} else {
-		agg.words[word] = 1
+		store.words[word] = 1
 	}
 
 	for _, char := range word {
 		if unicode.IsLetter(char) {
 			letter := string(char)
 
-			if count, exists := agg.letters[letter]; exists {
-				agg.letters[letter] = count + 1
+			if count, exists := store.letters[letter]; exists {
+				store.letters[letter] = count + 1
 			} else {
-				agg.letters[letter] = 1
+				store.letters[letter] = 1
 			}
 		}
 	}
 }
 
-func (agg *MutexAggregator) Read() Summary {
-	agg.lock.RLock()
-	defer agg.lock.RUnlock()
+func (store *MutexStore) Query() Summary {
+	store.lock.RLock()
+	defer store.lock.RUnlock()
 
 	return Summary{
-		Count:      len(agg.words),
-		TopWords:   topN(agg.words, 5),
-		TopLetters: topN(agg.letters, 5),
+		Count:      len(store.words),
+		TopWords:   topN(store.words, 5),
+		TopLetters: topN(store.letters, 5),
 	}
 }
 
