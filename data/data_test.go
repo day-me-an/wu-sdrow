@@ -23,6 +23,22 @@ func BenchmarkWrite(b *testing.B) {
 	}
 }
 
+func TestQuery_Empty(t *testing.T) {
+	summary := summaryFrom()
+
+	if summary.Count > 0 {
+		t.Error("Expected zero words")
+	}
+
+	if len(summary.TopWords) > 0 {
+		t.Error("Expected no top words")
+	}
+
+	if len(summary.TopLetters) > 0 {
+		t.Error("Expected no top letters")
+	}
+}
+
 func TestQuery_Words(t *testing.T) {
 	summary := summaryFrom("hello", "hello", "world")
 
@@ -73,7 +89,18 @@ func TestTopN(t *testing.T) {
 	}
 }
 
-func TestTopMismatchedSize(t *testing.T) {
+func TestTopN_Empty(t *testing.T) {
+	m := map[string]int{}
+
+	actual := topN(m, 2)
+	expected := []string{}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Error("Top items should be empty", actual)
+	}
+}
+
+func TestTopN_MismatchedSize(t *testing.T) {
 	m := map[string]int{"hello": 5, "world": 8}
 
 	actual := topN(m, 3)
