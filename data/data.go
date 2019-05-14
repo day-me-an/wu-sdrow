@@ -4,7 +4,12 @@ import (
 	"strings"
 	"sync"
 	"unicode"
+
+	"github.com/wangjia184/sortedset"
 )
+
+// The N most common words and letters to be returned by the query.
+const mostCommonN = 5
 
 type Summary struct {
 	// The number of _unique_ words seen.
@@ -24,14 +29,14 @@ type MutexStore struct {
 	// Chosen a RWMutex over a regular Mutex because multiple simultaneous reads don't need to lock unless sonething is being written.
 	lock sync.RWMutex
 
-	words   map[string]int
-	letters map[string]int
+	words   *sortedset.SortedSet
+	letters *sortedset.SortedSet
 }
 
 func NewMutexStore() *MutexStore {
 	return &MutexStore{
-		words:   make(map[string]int),
-		letters: make(map[string]int),
+		words:   sortedset.New(),
+		letters: sortedset.New(),
 	}
 }
 
@@ -42,21 +47,13 @@ func (store *MutexStore) Write(word string) {
 	store.lock.Lock()
 	defer store.lock.Unlock()
 
-	if count, exists := store.words[word]; exists {
-		store.words[word] = count + 1
-	} else {
-		store.words[word] = 1
-	}
+	store.words.AddOrUpdate(word, 1, nil)
 
 	for _, char := range word {
 		if unicode.IsLetter(char) {
 			letter := string(char)
 
-			if count, exists := store.letters[letter]; exists {
-				store.letters[letter] = count + 1
-			} else {
-				store.letters[letter] = 1
-			}
+			store.letters.AddOrUpdate(letter, 1, nil)
 		}
 	}
 }
@@ -66,38 +63,20 @@ func (store *MutexStore) Query() Summary {
 	defer store.lock.RUnlock()
 
 	return Summary{
-		Count:      len(store.words),
-		TopWords:   topN(store.words, 5),
-		TopLetters: topN(store.letters, 5),
+		Count:      store.words.GetCount(),
+		TopWords:   sortedSetTopN(store.words, mostCommonN),
+		TopLetters: sortedSetTopN(store.letters, mostCommonN),
 	}
 }
 
-// Finds the N highest value entries in a map.
-func topN(m map[string]int, n int) []string {
-	// The map size may be less than the requested N.
-	if n > len(m) {
-		n = len(m)
+func sortedSetTopN(ss *sortedset.SortedSet, n int) []string {
+	nodes := ss.GetByRankRange(1, 5, false)
+
+	var items []string
+
+	for _, node := range nodes {
+		items = append(items, node.Key())
 	}
 
-	top := make([]string, n)
-	picked := make(map[string]bool)
-
-	for i := 0; i < n; i++ {
-		highestSoFar := 0
-
-		for item, count := range m {
-			if picked[item] {
-				continue
-			}
-
-			if count > highestSoFar {
-				highestSoFar = count
-				top[i] = item
-			}
-		}
-
-		picked[top[i]] = true
-	}
-
-	return top
+	return items
 }

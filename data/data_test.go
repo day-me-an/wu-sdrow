@@ -1,6 +1,8 @@
 package data
 
 import (
+	"bufio"
+	"os"
 	"reflect"
 	"testing"
 )
@@ -13,14 +15,50 @@ func TestWrite(t *testing.T) {
 
 func BenchmarkWrite(b *testing.B) {
 	store := NewMutexStore()
+	words := getBenchmarkWords()
+	totalWords := len(words)
 
 	// Don't include any time taken for initialisation in the benchmark.
 	b.ResetTimer()
 
 	for n := 0; n < b.N; n++ {
-		// TODO: use random words here for a more realistic benchmark.
-		store.Write("hello")
+		// Restarts from the beginning when it goes out of range.
+		wordIndice := n % totalWords
+		store.Write(words[wordIndice])
 	}
+}
+
+func BenchmarkQuery(b *testing.B) {
+	store := NewMutexStore()
+	words := getBenchmarkWords()
+
+	for i := 0; i < len(words); i++ {
+		store.Write(words[i])
+	}
+
+	b.ResetTimer()
+
+	for n := 0; n < b.N; n++ {
+		store.Query()
+	}
+}
+
+// Loads a large shuffled file of English words into an array for realistic benchmarking purposes.
+func getBenchmarkWords() []string {
+	file, err := os.Open("./shuffled.txt")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+
+	var words []string
+
+	for scanner.Scan() {
+		words = append(words, scanner.Text())
+	}
+
+	return words
 }
 
 func TestQuery_Empty(t *testing.T) {
@@ -76,37 +114,4 @@ func summaryFrom(words ...string) Summary {
 	}
 
 	return store.Query()
-}
-
-func TestTopN(t *testing.T) {
-	m := map[string]int{"bob": -4, "hello": 5, "world": 8}
-
-	actual := topN(m, 2)
-	expected := []string{"world", "hello"}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Error("Top items not as expected", actual)
-	}
-}
-
-func TestTopN_Empty(t *testing.T) {
-	m := map[string]int{}
-
-	actual := topN(m, 2)
-	expected := []string{}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Error("Top items should be empty", actual)
-	}
-}
-
-func TestTopN_MismatchedSize(t *testing.T) {
-	m := map[string]int{"hello": 5, "world": 8}
-
-	actual := topN(m, 3)
-	expected := []string{"world", "hello"}
-
-	if len(actual) != len(expected) {
-		t.Error("Top items length should be less than or equal to the actual map length")
-	}
 }
