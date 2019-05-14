@@ -70,7 +70,7 @@ func (store *MutexStore) Query() Summary {
 }
 
 func sortedSetTopN(ss *sortedset.SortedSet, n int) []string {
-	nodes := ss.GetByRankRange(1, 5, false)
+	nodes := ss.GetByRankRange(1, n, false)
 
 	var items []string
 
