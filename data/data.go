@@ -8,6 +8,9 @@ import (
 	"github.com/wangjia184/sortedset"
 )
 
+// The N most common words and letters to be returned by the query.
+const mostCommonN = 5
+
 type Summary struct {
 	// The number of _unique_ words seen.
 	Count int `json:"count"`
@@ -61,8 +64,8 @@ func (store *MutexStore) Query() Summary {
 
 	return Summary{
 		Count:      store.words.GetCount(),
-		TopWords:   sortedSetTopN(store.words, 5),
-		TopLetters: sortedSetTopN(store.letters, 5),
+		TopWords:   sortedSetTopN(store.words, mostCommonN),
+		TopLetters: sortedSetTopN(store.letters, mostCommonN),
 	}
 }
 
