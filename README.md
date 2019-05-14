@@ -22,7 +22,7 @@ BenchmarkWrite-4   	 2000000	       858 ns/op	      15 B/op	       0 allocs/op
 BenchmarkQuery-4   	      20	  73913326 ns/op	     160 B/op	       2 allocs/op
 ```
 
-I looked for an efficient sorted set package and found [wangjia184's](https://godoc.org/github.com/wangjia184/sortedset). It has O(log(N)) complexity for the  operations this program uses. This results in slightly slower writes, but a much faster ability to calculate the most common _N_ words during queries.
+I looked for an efficient sorted set package and found [wangjia184's](https://godoc.org/github.com/wangjia184/sortedset) that uses skip lists internally. It has O(log(N)) complexity for the  operations this program uses. This results in slightly slower writes, but a much faster ability to calculate the most common _N_ words during queries.
 
 ```sh
 BenchmarkWrite-4   	 1000000	      1889 ns/op	      69 B/op	       0 allocs/op
@@ -31,3 +31,9 @@ BenchmarkWrite-4   	 1000000	      1889 ns/op	      69 B/op	       0 allocs/op
 ```sh
 BenchmarkQuery-4   	  500000	      2157 ns/op	     720 B/op	      16 allocs/op
 ```
+
+## Future work
+- Explore ways to reduce the potential performance hit caused by lock contention. This becomes an issue with large numbers of concurrent writes.
+	1) Produce a summary for each submitted text and then write this to the store instead of writing each word.
+	2) Benchmark using a bufferred channel instead of a mutex to avoid locks.
+- Add a simple cache to the `/stats` endpoint to easily support more concurrent queries.
