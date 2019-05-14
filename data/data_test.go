@@ -115,36 +115,3 @@ func summaryFrom(words ...string) Summary {
 
 	return store.Query()
 }
-
-func TestTopN(t *testing.T) {
-	m := map[string]int{"bob": -4, "hello": 5, "world": 8}
-
-	actual := topN(m, 2)
-	expected := []string{"world", "hello"}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Error("Top items not as expected", actual)
-	}
-}
-
-func TestTopN_Empty(t *testing.T) {
-	m := map[string]int{}
-
-	actual := topN(m, 2)
-	expected := []string{}
-
-	if !reflect.DeepEqual(actual, expected) {
-		t.Error("Top items should be empty", actual)
-	}
-}
-
-func TestTopN_MismatchedSize(t *testing.T) {
-	m := map[string]int{"hello": 5, "world": 8}
-
-	actual := topN(m, 3)
-	expected := []string{"world", "hello"}
-
-	if len(actual) != len(expected) {
-		t.Error("Top items length should be less than or equal to the actual map length")
-	}
-}

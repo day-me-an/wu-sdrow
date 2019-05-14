@@ -12,14 +12,22 @@ An initial MVP was built using mutexes instead of channels with the aim of meeti
 It has a good level of test coverage that will help spot any regressions during future optimisations or adding of new features.
 
 ## Optimisation
-Original Write() performance:
+The original approach of using a `map[string]int` to store the occurances of words/letters had very fast writes, but much slower queries.
 
 ```sh
 BenchmarkWrite-4   	 2000000	       858 ns/op	      15 B/op	       0 allocs/op
 ```
 
-Original Query() performance:
-
 ```sh
 BenchmarkQuery-4   	      20	  73913326 ns/op	     160 B/op	       2 allocs/op
+```
+
+I looked for an efficient sorted set package and found [wangjia184's](https://godoc.org/github.com/wangjia184/sortedset). It has O(log(N)) complexity for the  operations this program uses. This results in slightly slower writes, but a much faster ability to calculate the most common _N_ words during queries.
+
+```sh
+BenchmarkWrite-4   	 1000000	      1889 ns/op	      69 B/op	       0 allocs/op
+```
+
+```sh
+BenchmarkQuery-4   	  500000	      2157 ns/op	     720 B/op	      16 allocs/op
 ```
