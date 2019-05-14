@@ -36,4 +36,4 @@ BenchmarkQuery-4   	  500000	      2157 ns/op	     720 B/op	      16 allocs/op
 - Explore ways to reduce the potential performance hit caused by lock contention. This becomes an issue with large numbers of concurrent writes.
 	1) Produce a summary for each submitted text and then write this to the store instead of writing each word.
 	2) Benchmark using a bufferred channel instead of a mutex to avoid locks.
-- Add a simple cache to the `/stats` endpoint to easily support more concurrent queries.
+- Add a simple cache to the `/stats` endpoint to easily support more concurrent stats requests.
